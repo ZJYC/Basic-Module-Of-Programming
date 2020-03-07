@@ -155,14 +155,19 @@ typedef struct {
 }CallbackItem;
 
 typedef struct {
-	CallbackItem Items[0];
-	UL32 TotalLength;
+	UL32 Mask;
+	UL32 Msg;
+}Param;
+
+typedef struct {
+	CallbackItem *Items;
+	UL32 ItemsLength;
 }CallbackGroup;
 
 static BOOL CallbackExe(CallbackGroup * pCallbackGroup, UL32 Mask, VOID * pMsg) {
 	CallbackRes Res = eJustExit;
 	if (pCallbackGroup == NULL)return eFAIL;
-	for (UL32 i = 0; i < pCallbackGroup->TotalLength; i++) {
+	for (UL32 i = 0; i < pCallbackGroup->ItemsLength; i++) {
 		if (pCallbackGroup->Items[i].Mask & Mask) {
 			if (pCallbackGroup->Items[i].Function != NULL && pCallbackGroup->Items[i].Occupied == eFAIL) {
 
@@ -171,6 +176,9 @@ static BOOL CallbackExe(CallbackGroup * pCallbackGroup, UL32 Mask, VOID * pMsg) 
 				pCallbackGroup->Items[i].Occupied = eFAIL;
 
 				if (Res == eJustExit)return eTRUE;
+			}
+			if (pCallbackGroup->Items[i].Function != NULL && pCallbackGroup->Items[i].Occupied == eTRUE) {
+				//Debug information ...
 			}
 		}
 	}
