@@ -1,30 +1,126 @@
 
+typedef unsigned short   			US16;
+typedef signed short     			SS16;
+typedef unsigned char    			UB08;
+typedef signed char      			SB08;
+typedef unsigned long    			UL32;
+typedef signed long      			SL32;
+typedef float            			FT32;
+typedef double           			DB64;
+typedef unsigned long long int      UL64;
+typedef signed long long int        SL64;
 
-#if 1 /* 仿操作系统信号量 */
-static UB08 Semaphore_Get(UB08 * pSemaphore,UB08 Num){
-	if(pSemaphore == NULL)return FAIL;
-	if(*pSemaphore != NULL){
-		*pSemaphore -= (*pSemaphore >= Num ? Num : *pSemaphore);
-		return TRUE;
-	}
-	return FAIL;
-}
-static UB08 Semaphore_Set(UB08 * pSemaphore,UB08 New){
-	if(pSemaphore == NULL)return FAIL;
-	*pSemaphore = New;
-	return TRUE;
-}
-typedef struct{
-	UB08 (*Get)(UB08 * pSemaphore,UB08 Num);
-	UB08 (*Set)(UB08 * pSemaphore,UB08 Num);
+#define TRUE		(0x01)
+#define FALSE		(0x00)
+#define NULL		(0x00)
+#define T			(1)
+#define F			(0)
+#define FAIL		(0x00)
+#define PASS		(0x01)
+//进入临界区
+#define CRITICAL_ENTER()	{;}
+//退出临界区
+#define CRITICAL_EXITX()	{;}
+
+typedef enum {
+	eFAIL = 0x00,
+	eTRUE = 0x01,
+}BOOL;
+
+#pragma region 信号量操作
+//信号量结构体
+typedef struct {
+	BOOL Occupied;
+	US16 Cnt;
 }Semaphore;
-Semaphore Sem = {
-	.Get = Semaphore_Get,
-	.Set = Semaphore_Set,
-};
-#endif
+//设定信号量的初始值
+static BOOL SemaphoreInit(Semaphore * pSemaphore, US16 SetValue) {
+	CRITICAL_ENTER();
 
-#if 1/* 模块结构 */
+	if (pSemaphore == NULL || pSemaphore->Occupied == eTRUE) {
+		CRITICAL_EXITX();
+		return eFAIL;
+	}
+	pSemaphore->Occupied = eTRUE;
+	pSemaphore->Cnt = SetValue;
+	pSemaphore->Occupied = eFAIL;
+
+	CRITICAL_EXITX();
+	return eTRUE;
+}
+//获取信号量
+static BOOL SemaphoreTake(Semaphore * pSemaphore) {
+	UB08 Res = eFAIL;
+	CRITICAL_ENTER();
+
+	if (pSemaphore == NULL || pSemaphore->Occupied == eTRUE) {
+		CRITICAL_EXITX();
+		return eFAIL;
+	}
+	pSemaphore->Occupied = eTRUE;
+	if (pSemaphore->Cnt > NULL) {
+		pSemaphore->Cnt = pSemaphore->Cnt - 1;
+		Res = eTRUE;
+	}
+	else {
+		Res = eFAIL;
+	}
+	pSemaphore->Occupied = eFAIL;
+	CRITICAL_EXITX();
+	return Res;
+}
+//释放信号量
+static BOOL SemaphoreGive(Semaphore * pSemaphore) {
+	CRITICAL_ENTER();
+
+	if (pSemaphore == NULL || pSemaphore->Occupied == eTRUE) {
+		CRITICAL_EXITX();
+		return eFAIL;
+	}
+
+	pSemaphore->Occupied = eTRUE;
+	pSemaphore->Cnt = pSemaphore->Cnt + 1;
+	pSemaphore->Occupied = eFAIL;
+
+	CRITICAL_EXITX();
+	return eTRUE;
+}
+//查看信号量
+static BOOL SemaphorePeek(Semaphore * pSemaphore) {
+	UB08 Res = eFAIL;
+	CRITICAL_ENTER();
+
+	if (pSemaphore == NULL || pSemaphore->Occupied == eTRUE) {
+		CRITICAL_EXITX();
+		return eFAIL;
+	}
+
+	pSemaphore->Occupied = eTRUE;
+	Res = (pSemaphore->Cnt == NULL ? eFAIL : eTRUE);
+	pSemaphore->Occupied = eFAIL;
+
+	CRITICAL_EXITX();
+	return Res;
+}
+//接口
+typedef struct {
+	BOOL(*Init)(Semaphore * pSemaphore, US16 SetValue);
+	BOOL(*Take)(Semaphore * pSemaphore);
+	BOOL(*Give)(Semaphore * pSemaphore);
+	BOOL(*Peek)(Semaphore * pSemaphore);
+}SemaphoreApi;
+
+SemaphoreApi Sem = {
+.Init = SemaphoreInit,
+.Take = SemaphoreTake,
+.Give = SemaphoreGive,
+.Peek = SemaphorePeek,
+};
+
+#pragma endregion
+
+#pragma region 函数模块
+
 typedef struct{/* 底桩实现 */
 	VOID (*Init)(VOID);
 }XX_ModuleImport;
@@ -39,83 +135,49 @@ typedef struct{/* 模块结构 */
 	XX_ModuleExport Export;
 	XX_ModuleTmpdat Tmpdat;
 }XX_Module;
-#endif
 
-#if 1/* 回调注册 */
-typedef CBKR (*CBKF)(UL32 Tag, VOID * pMsg);
-#define BIT(x)		(UL32)(1 << (x))
-typedef enum{
-	Fail = 0x00,
-	True = 0x01,
-	Full = 0x02,
-	
-	Stop = 0x64,
-}CBKR
+#pragma endregion
+
+#pragma region 函数回调
+
+typedef enum {
+	eJustExit = 0x01,//没有必要传给下个函数了，此标志为独享
+	eKeepPass = 0x02,//继续传递给以后的函数
+}CallbackRes;
+
+//typedef CallbackRes(*CallbackFunction)(UL32 Msk, VOID * pMsg);
+//CallbackFunction Function;
+
 typedef struct {
-	CBKF Cbk;
-	UL32 Msk;
-}CBKI;
+	CallbackRes(*Function)(UL32 Msk, VOID * pMsg);
+	UL32 Mask;
+	BOOL Occupied;
+}CallbackItem;
+
 typedef struct {
-	CBKI Cbks[0];
-	UL32 Lens;
-}CBKS;
-static CBKR Init(CBKS * pCBKS,CBKI * pCBKI,UL32 Lens){
-	if(pCBKS == NULL || pCBKI == NULL)return Fail;
-	pCBKS->Cbks = pCBI;
-	pCBKS->Lens = Lens;
-	return True;
-}
-static CBKR Addx(CBKS * pCBKS,UL32 Msk,CBKF pNew){
-	if((pCBKS == NULL)||(pNew == NULL))return Fail;
-    /* 已经存在就无需再次添加了 */
-    for (UL32 i = NULL; i < pCBM->Lens; i++) {
-        if (pCBM->Cbks[i].Cbk == pNew)return True;
-    }
-	/* 尝试加入 */
-	for (UL32 i = NULL; i < pCBM->Lens; i++) {
-		if(pCBM->Cbks[i].Cbk == UL32_NULL){
-			pCBM->Cbks[i].Msk = Msk;
-			pCBM->Cbks[i].Cbk = pNew;
-			return True;
+	CallbackItem Items[0];
+	UL32 TotalLength;
+}CallbackGroup;
+
+static BOOL CallbackExe(CallbackGroup * pCallbackGroup, UL32 Mask, VOID * pMsg) {
+	CallbackRes Res = eJustExit;
+	if (pCallbackGroup == NULL)return eFAIL;
+	for (UL32 i = 0; i < pCallbackGroup->TotalLength; i++) {
+		if (pCallbackGroup->Items[i].Mask & Mask) {
+			if (pCallbackGroup->Items[i].Function != NULL && pCallbackGroup->Items[i].Occupied == eFAIL) {
+
+				pCallbackGroup->Items[i].Occupied = eTRUE;
+				Res = pCallbackGroup->Items[i].Function(Mask, pMsg);
+				pCallbackGroup->Items[i].Occupied = eFAIL;
+
+				if (Res == eJustExit)return eTRUE;
+			}
 		}
 	}
-	if(i >= pCBM->Lens){
-		return Full;
-	}
-	return Fail;
+	return eTRUE;
 }
-static CBKR Delx(CBKS * pCBKS,CBKF pDel){
-	if((pCBKS == NULL)||(pDel == NULL))return Fail;
-	for(UL32 i = UL32_NULL;i < pCBKS->Lens;i++){
-		if(pCBKS->CBIS[i].Cbk == pDel){
-			pCBKS->CBIS[i].Cbk = NULL;
-			return True;
-		}
-	}
-	return Fail;
-}
-static CBKR Exex(CBKS * pCBKS,UL32 Msk,VOID * pMsg){
-	if(pCBKS == UL32_NULL)return Fail;
-	for(UL32 i = UL32_NULL;i < pCBKS->Lens;i++){
-		if ((pCBKS->Cbks[i].Cbk != NULL) && 
-            (pCBKS->Cbks[i].Msk & Msk)) {
-			if(pCBKS->Cbks[i].Fuc(Msk, pMsg) == Stop)return Stop;
-		}
-	}
-	return True;
-}
-typedef struct{/* 驱动模块 */
-	CBKR (*Init)(CBKS * pCBKS,CBKI * pCBKI,UL32 Lens);
-	CBKR (*Addx)(CBKS * pCBKS,UL32 Msk,CBKF pNew);
-	CBKR (*Delx)(CBKS * pCBKS,CBKF pDel);
-	CBKR (*Exex)(CBKS * pCBKS,UL32 Msk,VOID * pMsg)
-}CBK_ModuleExport;
-typedef struct{/* 模块结构 */
-	//XX_ModuleImport Import;
-	CBK_ModuleExport Export;
-	//XX_ModuleTmpdat Tmpdat;
-}CBK_Module;
-#endif
+
+#pragma endregion
 
 #if 1/* 状态机 */
 static UL32 Step = NULL;

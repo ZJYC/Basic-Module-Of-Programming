@@ -1,8 +1,8 @@
---------------------------------------------------------------------------
+//--------------------------------------------------------------------------
 #define CONVERT32(x)	(((x) & 0x000000FF) << 24 |\((x) & 0x0000FF00) << 8 |\((x) & 0x00FF0000) >> 8 |\((x) & 0xFF000000) >> 24)
 #define CONVERT16(x)	(((x) & 0x00FF) << 8 | ((x) & 0xFF00) >> 8)
 #ifdef CPU_Length_32
---------------------------------------------------------------------------
+//--------------------------------------------------------------------------
 #define US16	unsigned short
 #define SS16	signed short
 #define UB08	unsigned char
@@ -20,6 +20,8 @@ typedef unsigned long    					UL32;
 typedef signed long      					SL32;
 typedef float            					FT32;
 typedef double           					DB64;
+typedef unsigned long long int              UL64;
+typedef signed long long int                SL64;
 --------------------------------------------------------------------------
 typedef volatile unsigned char    			VU08;
 typedef volatile signed char    			VS08;
@@ -84,6 +86,13 @@ typedef volatile const double				VCF64;
 #define F			(0)
 #define FAIL		(0x00)
 #define PASS		(0x01)
+
+
+typedef enum {
+	eFAIL = 0x00,
+	eTRUE = 0x01,
+}BOOL;
+
 --------------------------------------------------------------------------
 #define US16_NULL	(0)
 #define SS16_NULL	(0)
