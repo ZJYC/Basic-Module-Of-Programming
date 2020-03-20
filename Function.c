@@ -128,10 +128,10 @@ static BOOL SemPeek(S_PSem pSem) {
 }
 //接口
 typedef struct {
-    BOOL(PNT1(Init))(S_PSem pSem, US16 SetValue);
-    BOOL(PNT1(Take))(S_PSem pSem);
-    BOOL(PNT1(Give))(S_PSem pSem);
-    BOOL(PNT1(Peek))(S_PSem pSem);
+    BOOL(*Init)(S_PSem pSem, US16 SetValue);
+    BOOL(*Take)(S_PSem pSem);
+    BOOL(*Give)(S_PSem pSem);
+    BOOL(*Peek)(S_PSem pSem);
 }S_SemApi;
 
 S_SemApi SemApi = {
@@ -194,6 +194,7 @@ typedef struct {
     BOOL(*Take)(S_PMail pMail, PPVD MailContent);
     BOOL(*Give)(S_PMail pMail, PVOD MailContent)
 }S_MailApi;
+
 S_MailApi MailApi = {
 .Take = MailTake,
 .Give = MailGive,
