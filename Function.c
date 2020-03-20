@@ -10,6 +10,17 @@ typedef double           			DB64;
 typedef unsigned long long int      UL64;
 typedef signed long long int        SL64;
 
+typedef unsigned short   					*PUS16;
+typedef signed short     					*PSS16;
+typedef unsigned char    					*PUB08;
+typedef signed char      					*PSB08;
+typedef unsigned long    					*PUL32;
+typedef signed long      					*PSL32;
+typedef float            					*PFT32;
+typedef double           					*PDB64;
+typedef unsigned long long int              *PUL64;
+typedef signed long long int                *PSL64;
+
 //代替 void
 #define VOID        void
 //代替 void *
@@ -323,6 +334,209 @@ switch(Step){
 	break;
 }
 #endif
+
+#pragma region Convert
+typedef struct {
+    UB08*(*US16_2_UB08)(US16 Input, BOOL Reverse);
+    UB08*(*SS16_2_UB08)(SS16 Input, BOOL Reverse);
+    UB08*(*UL32_2_UB08)(UL32 Input, BOOL Reverse);
+    UB08*(*SL32_2_UB08)(SL32 Input, BOOL Reverse);
+    UB08*(*FT32_2_UB08)(FT32 Input, BOOL Reverse);
+    US16(*UB08_2_US16)(UB08* Input, BOOL Reverse);
+    SS16(*UB08_2_SS16)(UB08* Input, BOOL Reverse);
+    UL32(*UB08_2_UL32)(UB08* Input, BOOL Reverse);
+    SL32(*UB08_2_SL32)(UB08* Input, BOOL Reverse);
+    FT32(*UB08_2_FT32)(UB08* Input, BOOL Reverse);
+}S_Convert;
+
+static UB08* US16_2_UB08(US16 Input, BOOL Reverse) {
+    UB08 Temp[2] = { NULL };
+
+    if (Reverse == eFAIL) {
+        Temp[0] = (Input & 0xFF00) >> 8;
+        Temp[1] = (Input & 0x00FF) >> 0;
+    }
+    else {
+        Temp[1] = (Input & 0xFF00) >> 8;
+        Temp[0] = (Input & 0x00FF) >> 0;
+    }
+
+    return Temp;
+}
+static UB08* SS16_2_UB08(SS16 Input, BOOL Reverse) {
+    UB08 Temp[2] = { NULL };
+
+    if (Reverse == eFAIL) {
+        Temp[0] = (Input & 0xFF00) >> 8;
+        Temp[1] = (Input & 0x00FF) >> 0;
+    }
+    else {
+        Temp[1] = (Input & 0xFF00) >> 8;
+        Temp[0] = (Input & 0x00FF) >> 0;
+    }
+
+    return Temp;
+}
+static UB08* UL32_2_UB08(UL32 Input, BOOL Reverse) {
+    UB08 Temp[4] = { NULL };
+
+    if (Reverse == eFAIL) {
+        Temp[0] = (Input & 0xFF000000) >> 0x18;
+        Temp[1] = (Input & 0x00FF0000) >> 0x10;
+        Temp[2] = (Input & 0x0000FF00) >> 0x08;
+        Temp[3] = (Input & 0x000000FF) >> 0x00;
+    }
+    else {
+        Temp[3] = (Input & 0xFF000000) >> 0x18;
+        Temp[2] = (Input & 0x00FF0000) >> 0x10;
+        Temp[1] = (Input & 0x0000FF00) >> 0x08;
+        Temp[0] = (Input & 0x000000FF) >> 0x00;
+    }
+
+    return Temp;
+}
+static UB08* SL32_2_UB08(SL32 Input, BOOL Reverse) {
+    UB08 Temp[4] = { NULL };
+
+    if (Reverse == eFAIL) {
+        Temp[0] = (Input & 0xFF000000) >> 0x18;
+        Temp[1] = (Input & 0x00FF0000) >> 0x10;
+        Temp[2] = (Input & 0x0000FF00) >> 0x08;
+        Temp[3] = (Input & 0x000000FF) >> 0x00;
+    }
+    else {
+        Temp[3] = (Input & 0xFF000000) >> 0x18;
+        Temp[2] = (Input & 0x00FF0000) >> 0x10;
+        Temp[1] = (Input & 0x0000FF00) >> 0x08;
+        Temp[0] = (Input & 0x000000FF) >> 0x00;
+    }
+
+    return Temp;
+}
+static UB08* FT32_2_UB08(FT32 Input, BOOL Reverse) {
+    UB08 Temp[4] = { NULL };
+    UB08* p = (UB08*)&Input;
+
+    if (Reverse == eFAIL) {
+        Temp[0] = p[3];
+        Temp[1] = p[2];
+        Temp[2] = p[1];
+        Temp[3] = p[0];
+    }
+    else {
+        Temp[0] = p[0];
+        Temp[1] = p[1];
+        Temp[2] = p[2];
+        Temp[3] = p[3];
+    }
+
+    return Temp;
+}
+static US16  UB08_2_US16(UB08* Input, BOOL Reverse) {
+    if (Input == NULL)return NULL;
+    US16 Temp = NULL;
+
+    if (Reverse == eTRUE) {
+        Temp |= (Input[0] << 0x08);
+        Temp |= (Input[1] << 0x00);
+    }
+    else {
+        Temp |= (Input[1] << 0x08);
+        Temp |= (Input[0] << 0x00);
+    }
+
+    return Temp;
+}
+static SS16  UB08_2_SS16(UB08* Input, BOOL Reverse) {
+    if (Input == NULL)return NULL;
+    SS16 Temp = NULL;
+
+    if (Reverse == eTRUE) {
+        Temp |= (Input[0] << 0x08);
+        Temp |= (Input[1] << 0x00);
+    }
+    else {
+        Temp |= (Input[1] << 0x08);
+        Temp |= (Input[0] << 0x00);
+    }
+
+    return Temp;
+}
+static UL32  UB08_2_UL32(UB08* Input, BOOL Reverse) {
+    if (Input == NULL)return NULL;
+    UL32 Temp = NULL;
+
+    if (Reverse == eTRUE) {
+        Temp |= (Input[0] << 0x18);
+        Temp |= (Input[1] << 0x10);
+        Temp |= (Input[2] << 0x08);
+        Temp |= (Input[3] << 0x00);
+    }
+    else {
+        Temp |= (Input[3] << 0x18);
+        Temp |= (Input[2] << 0x10);
+        Temp |= (Input[1] << 0x08);
+        Temp |= (Input[0] << 0x00);
+    }
+
+    return Temp;
+}
+static SL32  UB08_2_SL32(UB08* Input, BOOL Reverse) {
+    if (Input == NULL)return NULL;
+    SL32 Temp = NULL;
+
+    if (Reverse == eTRUE) {
+        Temp |= (Input[0] << 0x18);
+        Temp |= (Input[1] << 0x10);
+        Temp |= (Input[2] << 0x08);
+        Temp |= (Input[3] << 0x00);
+    }
+    else {
+        Temp |= (Input[3] << 0x18);
+        Temp |= (Input[2] << 0x10);
+        Temp |= (Input[1] << 0x08);
+        Temp |= (Input[0] << 0x00);
+    }
+
+    return Temp;
+}
+static FT32  UB08_2_FT32(UB08* Input, BOOL Reverse) {
+    if (Input == NULL)return NULL;
+    FT32 Temp = NULL;
+    UB08* p = (UB08*)&Temp;
+
+    if (Reverse == eTRUE) {
+        p[0] = Input[0];
+        p[1] = Input[1];
+        p[2] = Input[2];
+        p[3] = Input[3];
+    }
+    else {
+        p[0] = Input[3];
+        p[1] = Input[2];
+        p[2] = Input[1];
+        p[3] = Input[0];
+    }
+
+    return Temp;
+}
+
+S_Convert Convert = {
+US16_2_UB08,
+SS16_2_UB08,
+UL32_2_UB08,
+SL32_2_UB08,
+FT32_2_UB08,
+UB08_2_US16,
+UB08_2_SS16,
+UB08_2_UL32,
+UB08_2_SL32,
+UB08_2_FT32,
+};
+
+#pragma endregion
+
+
 
 #if 1/* 另类字符串转数 */
 static UL32 S2B()
