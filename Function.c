@@ -10,6 +10,17 @@ typedef double           			DB64;
 typedef unsigned long long int      UL64;
 typedef signed long long int        SL64;
 
+typedef unsigned short   			BUS16;
+typedef signed short     			BSS16;
+typedef unsigned char    			BUB08;
+typedef signed char      			BSB08;
+typedef unsigned long    			BUL32;
+typedef signed long      			BSL32;
+typedef float            			BFT32;
+typedef double           			BDB64;
+typedef unsigned long long int      BUL64;
+typedef signed long long int        BSL64;
+
 typedef unsigned short   					*PUS16;
 typedef signed short     					*PSS16;
 typedef unsigned char    					*PUB08;
@@ -225,7 +236,7 @@ typedef struct{/* 驱动模块 */
 	VOID (*Init)(VOID);
 }XX_ModuleExport;
 typedef struct{/* 临时数据 */
-	UL32 Reserve;
+	UL32 HashCode;
 }XX_ModuleTmpdat;
 typedef struct{/* 模块结构 */
 	XX_ModuleImport Import;
@@ -433,7 +444,7 @@ static UB08* FT32_2_UB08(FT32 Input, BOOL Reverse) {
 
     return Temp;
 }
-static US16  UB08_2_US16(UB08* Input, BOOL Reverse) {
+static US16 UB08_2_US16(UB08* Input, BOOL Reverse) {
     if (Input == NULL)return NULL;
     US16 Temp = NULL;
 
@@ -448,7 +459,7 @@ static US16  UB08_2_US16(UB08* Input, BOOL Reverse) {
 
     return Temp;
 }
-static SS16  UB08_2_SS16(UB08* Input, BOOL Reverse) {
+static SS16 UB08_2_SS16(UB08* Input, BOOL Reverse) {
     if (Input == NULL)return NULL;
     SS16 Temp = NULL;
 
@@ -463,7 +474,7 @@ static SS16  UB08_2_SS16(UB08* Input, BOOL Reverse) {
 
     return Temp;
 }
-static UL32  UB08_2_UL32(UB08* Input, BOOL Reverse) {
+static UL32 UB08_2_UL32(UB08* Input, BOOL Reverse) {
     if (Input == NULL)return NULL;
     UL32 Temp = NULL;
 
@@ -482,7 +493,7 @@ static UL32  UB08_2_UL32(UB08* Input, BOOL Reverse) {
 
     return Temp;
 }
-static SL32  UB08_2_SL32(UB08* Input, BOOL Reverse) {
+static SL32 UB08_2_SL32(UB08* Input, BOOL Reverse) {
     if (Input == NULL)return NULL;
     SL32 Temp = NULL;
 
@@ -501,7 +512,7 @@ static SL32  UB08_2_SL32(UB08* Input, BOOL Reverse) {
 
     return Temp;
 }
-static FT32  UB08_2_FT32(UB08* Input, BOOL Reverse) {
+static FT32 UB08_2_FT32(UB08* Input, BOOL Reverse) {
     if (Input == NULL)return NULL;
     FT32 Temp = NULL;
     UB08* p = (UB08*)&Temp;
@@ -544,6 +555,157 @@ static UL32 S2B()
 #endif
 
 
+#pragma region 环形缓冲区
+
+#include <assert.h>
+#include <string.h>
+
+#define RINGBUFFER_NEW(name, BufferSize)        \
+        static BUB08 ringmem##name[BufferSize]; \
+        S_RingBuff name = {ringmem##name, (BufferSize), 0, ringmem##name, ringmem##name};
+
+#define RINGBUFFER_EXTERN(name) extern RingBuff_t name;
+
+typedef struct {
+    PUB08 BufferPointer;
+    BUS16 BufferSize;
+    BUS16 FilledSize;
+    PUB08 ReadPointer;
+    PUB08 WritPointer;
+}S_RingBuff,*S_PRingBuff;
+
+static BUS16 RB_Init(S_PRingBuff pRingBuff) {
+    assert(pRingBuff);
+    pRingBuff->WritPointer = pRingBuff->BufferPointer;
+    pRingBuff->ReadPointer = pRingBuff->BufferPointer;
+    return 0;
+}
+static BUS16 RB_Read(S_PRingBuff pRingBuff, PUB08 Buff, BUS16 Len) {
+    assert(Len > 0);
+    assert(pRingBuff);
+    //__disable_irq();
+    if (pRingBuff->FilledSize >= Len) {
+        if (pRingBuff->WritPointer > pRingBuff->ReadPointer) {
+            memcpy(Buff, pRingBuff->ReadPointer, Len);
+            pRingBuff->ReadPointer += Len;
+        }
+        else if (pRingBuff->WritPointer < pRingBuff->ReadPointer) {
+            BUS16 len1 = pRingBuff->BufferPointer + pRingBuff->BufferSize - 1 - pRingBuff->ReadPointer + 1;
+            if (len1 >= Len) {
+                memcpy(Buff, pRingBuff->ReadPointer, Len);
+                pRingBuff->ReadPointer += Len;
+            }
+            else {
+                BUS16 len2 = Len - len1;
+                memcpy(Buff, pRingBuff->ReadPointer, len1);
+                memcpy(Buff + len1, pRingBuff->BufferPointer, len2);
+                pRingBuff->ReadPointer = pRingBuff->BufferPointer + len2; // Wrap around
+            }
+        }
+        pRingBuff->FilledSize -= Len;
+        //__enable_irq();
+        return Len;
+    }
+    else {
+        //__enable_irq();
+        return 0;
+    }
+}
+static BUS16 RB_Peek(S_PRingBuff pRingBuff, PUB08 Buff, BUS16 Len) {
+    assert(Len > 0);
+    assert(pRingBuff);
+    //__disable_irq();
+    if (pRingBuff->FilledSize >= Len) {
+        if (pRingBuff->WritPointer > pRingBuff->ReadPointer) {
+            memcpy(Buff, pRingBuff->ReadPointer, Len);
+        }
+        else if (pRingBuff->WritPointer < pRingBuff->ReadPointer) {
+            BUS16 len1 = pRingBuff->BufferPointer + pRingBuff->BufferSize - 1 - pRingBuff->ReadPointer + 1;
+            if (len1 >= Len) {
+                memcpy(Buff, pRingBuff->ReadPointer, Len);
+            }
+            else {
+                BUS16 len2 = Len - len1;
+                memcpy(Buff, pRingBuff->ReadPointer, len1);
+                memcpy(Buff + len1, pRingBuff->BufferPointer, len2);
+            }
+        }
+        //__enable_irq();
+        return Len;
+    }
+    else {
+        //__enable_irq();
+        return 0;
+    }
+}
+static BUS16 RB_Writ(S_PRingBuff pRingBuff, PUB08 Buff, BUS16 Len) {
+    assert(Len > 0);
+    assert(pRingBuff);
+    //__disable_irq();
+    if (pRingBuff->BufferSize - pRingBuff->FilledSize < Len) {
+        //__enable_irq();
+        return 0;
+    }
+    else {
+        if (pRingBuff->WritPointer >= pRingBuff->ReadPointer) {
+            BUS16 len1 = pRingBuff->BufferPointer + pRingBuff->BufferSize - pRingBuff->WritPointer;
+            if (len1 >= Len) {
+                memcpy(pRingBuff->WritPointer, Buff, Len);
+                pRingBuff->WritPointer += Len;
+            }
+            else {
+                BUS16 len2 = Len - len1;
+                memcpy(pRingBuff->WritPointer, Buff, len1);
+                memcpy(pRingBuff->BufferPointer, Buff + len1, len2);
+                pRingBuff->WritPointer = pRingBuff->BufferPointer + len2; // Wrap around
+            }
+        }
+        else {
+            memcpy(pRingBuff->WritPointer, Buff, Len);
+            pRingBuff->WritPointer += Len;
+        }
+        pRingBuff->FilledSize += Len;
+        //__enable_irq();
+        return Len;
+    }
+}
+static BUS16 RB_GetFree(S_PRingBuff pRingBuff) {
+    return pRingBuff->BufferSize - pRingBuff->FilledSize;
+}
+static BUS16 RB_GetUsed(S_PRingBuff pRingBuff) {
+    return pRingBuff->FilledSize;
+}
+
+typedef struct {
+    BUS16(*Init)(S_PRingBuff pRingBuff);
+    BUS16(*Read)(S_PRingBuff pRingBuff, PUB08 Buff, BUS16 Len);
+    BUS16(*Peek)(S_PRingBuff pRingBuff, PUB08 Buff, BUS16 Len);
+    BUS16(*Writ)(S_PRingBuff pRingBuff, PUB08 Buff, BUS16 Len);
+    BUS16(*GetFree)(S_PRingBuff pRingBuff);
+    BUS16(*GetUsed)(S_PRingBuff pRingBuff);
+}S_RingBuffApi;
+
+S_RingBuffApi Rb = {
+.Init = RB_Init,
+.Read = RB_Read,
+.Peek = RB_Peek,
+.Writ = RB_Writ,
+.GetFree = RB_GetFree,
+.GetUsed = RB_GetUsed,
+};
+
+//使用样例
+
+RINGBUFFER_NEW(Tst, 1024);
+
+
+
+
+
+
+
+
+#pragma endregion
 
 
 
