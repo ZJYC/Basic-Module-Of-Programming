@@ -1,36 +1,36 @@
 
-typedef unsigned short   			US16;
-typedef signed short     			SS16;
-typedef unsigned char    			UB08;
-typedef signed char      			SB08;
-typedef unsigned long    			UL32;
-typedef signed long      			SL32;
-typedef float            			FT32;
-typedef double           			DB64;
+typedef unsigned short              US16;
+typedef signed short                SS16;
+typedef unsigned char               UB08;
+typedef signed char                 SB08;
+typedef unsigned long               UL32;
+typedef signed long                 SL32;
+typedef float                       FT32;
+typedef double                      DB64;
 typedef unsigned long long int      UL64;
 typedef signed long long int        SL64;
 
-typedef unsigned short   			BUS16;
-typedef signed short     			BSS16;
-typedef unsigned char    			BUB08;
-typedef signed char      			BSB08;
-typedef unsigned long    			BUL32;
-typedef signed long      			BSL32;
-typedef float            			BFT32;
-typedef double           			BDB64;
+typedef unsigned short              BUS16;
+typedef signed short                BSS16;
+typedef unsigned char               BUB08;
+typedef signed char                 BSB08;
+typedef unsigned long               BUL32;
+typedef signed long                 BSL32;
+typedef float                       BFT32;
+typedef double                      BDB64;
 typedef unsigned long long int      BUL64;
 typedef signed long long int        BSL64;
 
-typedef unsigned short   					*PUS16;
-typedef signed short     					*PSS16;
-typedef unsigned char    					*PUB08;
-typedef signed char      					*PSB08;
-typedef unsigned long    					*PUL32;
-typedef signed long      					*PSL32;
-typedef float            					*PFT32;
-typedef double           					*PDB64;
-typedef unsigned long long int              *PUL64;
-typedef signed long long int                *PSL64;
+typedef unsigned short              *PUS16;
+typedef signed short                *PSS16;
+typedef unsigned char               *PUB08;
+typedef signed char                 *PSB08;
+typedef unsigned long               *PUL32;
+typedef signed long                 *PSL32;
+typedef float                       *PFT32;
+typedef double                      *PDB64;
+typedef unsigned long long int      *PUL64;
+typedef signed long long int        *PSL64;
 
 //代替 void
 #define VOID        void
@@ -45,97 +45,97 @@ typedef signed long long int                *PSL64;
 
 #define BIT(x)          (1 << (x))
 
-#define TRUE		(0x01)
-#define FALSE		(0x00)
-#define NULL		(0x00)
-#define T			(1)
-#define F			(0)
-#define FAIL		(0x00)
-#define PASS		(0x01)
+#define TRUE        (0x01)
+#define FALSE       (0x00)
+#define NULL        (0x00)
+#define T           (1)
+#define F           (0)
+#define FAIL        (0x00)
+#define PASS        (0x01)
 //进入临界区
-#define CRITICAL_ENTER()	{;}
+#define CRITICAL_ENTER()    {;}
 //退出临界区
-#define CRITICAL_EXITX()	{;}
+#define CRITICAL_EXITX()    {;}
 
 typedef enum {
-	eFAIL = 0x00,
-	eTRUE = 0x01,
+    eFAIL = 0x00,
+    eTRUE = 0x01,
 }BOOL;
 
 #pragma region 信号量操作 || 常用在主任务中
 //信号量结构体
 typedef struct {
-	BOOL Occupied;
-	US16 Cnt;
+    BOOL Occupied;
+    US16 Cnt;
 }S_Sem,*S_PSem;
 //设定信号量的初始值
 static BOOL SemInit(S_PSem pSem, US16 SetValue) {
-	CRITICAL_ENTER();
+    CRITICAL_ENTER();
 
-	if (pSem == NULL || pSem->Occupied == eTRUE) {
-		CRITICAL_EXITX();
-		return eFAIL;
-	}
+    if (pSem == NULL || pSem->Occupied == eTRUE) {
+        CRITICAL_EXITX();
+        return eFAIL;
+    }
     pSem->Occupied = eTRUE;
     pSem->Cnt = SetValue;
     pSem->Occupied = eFAIL;
 
-	CRITICAL_EXITX();
-	return eTRUE;
+    CRITICAL_EXITX();
+    return eTRUE;
 }
 //获取信号量
 static BOOL SemTake(S_PSem pSem) {
-	UB08 Res = eFAIL;
-	CRITICAL_ENTER();
+    UB08 Res = eFAIL;
+    CRITICAL_ENTER();
 
-	if (pSem == NULL || pSem->Occupied == eTRUE) {
-		CRITICAL_EXITX();
-		return eFAIL;
-	}
+    if (pSem == NULL || pSem->Occupied == eTRUE) {
+        CRITICAL_EXITX();
+        return eFAIL;
+    }
     pSem->Occupied = eTRUE;
-	if (pSem->Cnt > NULL) {
+    if (pSem->Cnt > NULL) {
         pSem->Cnt = pSem->Cnt - 1;
-		Res = eTRUE;
-	}
-	else {
-		Res = eFAIL;
-	}
+        Res = eTRUE;
+    }
+    else {
+        Res = eFAIL;
+    }
     pSem->Occupied = eFAIL;
-	CRITICAL_EXITX();
-	return Res;
+    CRITICAL_EXITX();
+    return Res;
 }
 //释放信号量
 static BOOL SemGive(S_PSem pSem) {
-	CRITICAL_ENTER();
+    CRITICAL_ENTER();
 
-	if (pSem == NULL || pSem->Occupied == eTRUE) {
-		CRITICAL_EXITX();
-		return eFAIL;
-	}
+    if (pSem == NULL || pSem->Occupied == eTRUE) {
+        CRITICAL_EXITX();
+        return eFAIL;
+    }
 
     pSem->Occupied = eTRUE;
     pSem->Cnt = pSem->Cnt + 1;
     pSem->Occupied = eFAIL;
 
-	CRITICAL_EXITX();
-	return eTRUE;
+    CRITICAL_EXITX();
+    return eTRUE;
 }
 //查看信号量
 static BOOL SemPeek(S_PSem pSem) {
-	UB08 Res = eFAIL;
-	CRITICAL_ENTER();
+    UB08 Res = eFAIL;
+    CRITICAL_ENTER();
 
-	if (pSem == NULL || pSem->Occupied == eTRUE) {
-		CRITICAL_EXITX();
-		return eFAIL;
-	}
+    if (pSem == NULL || pSem->Occupied == eTRUE) {
+        CRITICAL_EXITX();
+        return eFAIL;
+    }
 
     pSem->Occupied = eTRUE;
-	Res = (pSem->Cnt == NULL ? eFAIL : eTRUE);
+    Res = (pSem->Cnt == NULL ? eFAIL : eTRUE);
     pSem->Occupied = eFAIL;
 
-	CRITICAL_EXITX();
-	return Res;
+    CRITICAL_EXITX();
+    return Res;
 }
 //接口
 typedef struct {
@@ -230,18 +230,18 @@ if (MailApi.Take(PNT0 MailUsartRecvdByte, (PPVD)(PNT0 RecvdByte)) == eTRUE) {
 #pragma region 函数模块
 
 typedef struct{/* 底桩实现 */
-	VOID (*Init)(VOID);
+    VOID (*Init)(VOID);
 }XX_ModuleImport;
 typedef struct{/* 驱动模块 */
-	VOID (*Init)(VOID);
+    VOID (*Init)(VOID);
 }XX_ModuleExport;
 typedef struct{/* 临时数据 */
-	UL32 HashCode;
+    UL32 HashCode;
 }XX_ModuleTmpdat;
 typedef struct{/* 模块结构 */
-	XX_ModuleImport Import;
-	XX_ModuleExport Export;
-	XX_ModuleTmpdat Tmpdat;
+    XX_ModuleImport Import;
+    XX_ModuleExport Export;
+    XX_ModuleTmpdat Tmpdat;
 }XX_Module;
 
 #pragma endregion
@@ -249,8 +249,8 @@ typedef struct{/* 模块结构 */
 #pragma region 函数回调
 
 typedef enum {
-	eJustExit = 0x01,//没有必要传给下个函数了，此标志为独享
-	eKeepPass = 0x02,//继续传递给以后的函数
+    eJustExit = 0x01,//没有必要传给下个函数了，此标志为独享
+    eKeepPass = 0x02,//继续传递给以后的函数
 }E_CallbackRes;
 
 typedef E_CallbackRes(*PCbkFUNC)(UL32 Msk, PVOD pMsg);
@@ -259,35 +259,35 @@ typedef struct {
     /* 回调函数 */
     PCbkFUNC pCbkFUNC;
     /* 掩码 */
-	UL32 Mask;
+    UL32 Mask;
     /* 被占用 */
-	BOOL Occupied;
+    BOOL Occupied;
 }S_CbkEntry,*S_PCbkEntry;
 
 typedef struct {
     /* 回调项 */
     S_PCbkEntry Entry;
     /* 回调总个数 */
-	UL32 EntryCount;  
+    UL32 EntryCount;  
 }S_CbkMgt,*S_PCbkMgt;
 
 static BOOL CallbackExe(S_PCbkMgt pCbkMgt, UL32 Mask, UL32 pMsg) {
     E_CallbackRes Res = eJustExit;
-	if (pCbkMgt == NULL)return eFAIL;
-	for (UL32 i = 0; i < pCbkMgt->EntryCount; i++) {
-		if (pCbkMgt->Entry[i].Mask & Mask) {
-			if (pCbkMgt->Entry[i].pCbkFUNC != NULL && pCbkMgt->Entry[i].Occupied == eFAIL) {
+    if (pCbkMgt == NULL)return eFAIL;
+    for (UL32 i = 0; i < pCbkMgt->EntryCount; i++) {
+        if (pCbkMgt->Entry[i].Mask & Mask) {
+            if (pCbkMgt->Entry[i].pCbkFUNC != NULL && pCbkMgt->Entry[i].Occupied == eFAIL) {
                 pCbkMgt->Entry[i].Occupied = eTRUE;
-				Res = pCbkMgt->Entry[i].pCbkFUNC(Mask, pMsg);
+                Res = pCbkMgt->Entry[i].pCbkFUNC(Mask, pMsg);
                 pCbkMgt->Entry[i].Occupied = eFAIL;
-				if (Res == eJustExit)return eTRUE;
-			}
-			if (pCbkMgt->Entry[i].pCbkFUNC != NULL && pCbkMgt->Entry[i].Occupied == eTRUE) {
-				//不应该调用自己
-			}
-		}
-	}
-	return eTRUE;
+                if (Res == eJustExit)return eTRUE;
+            }
+            if (pCbkMgt->Entry[i].pCbkFUNC != NULL && pCbkMgt->Entry[i].Occupied == eTRUE) {
+                //不应该调用自己
+            }
+        }
+    }
+    return eTRUE;
 }
 
 static BOOL CallbackAdd(S_PCbkMgt pCbkMgt, UL32 Mask, PCbkFUNC pCbkFUNC) {
@@ -331,19 +331,19 @@ CallbackExe(PNT0(Timer1BkGroup), MASK_FUNC, NULL);
 
 #if 1/* 状态机 */
 static UL32 Step = NULL;
-#define STEP_SETX(x)	{Step =  (x);}
-#define STEP_NEXT(x)	{Step += (x);}
+#define STEP_SETX(x)    {Step =  (x);}
+#define STEP_NEXT(x)    {Step += (x);}
 switch(Step){
-	case 0x00:
-	STEP_SETX(0x01);
-	break;
-	case 0x01:
-	STEP_NEXT(0x01)
-	break;
-	case 0x02:
-	break;
-	default:
-	break;
+    case 0x00:
+    STEP_SETX(0x01);
+    break;
+    case 0x01:
+    STEP_NEXT(0x01)
+    break;
+    case 0x02:
+    break;
+    default:
+    break;
 }
 #endif
 

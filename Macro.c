@@ -26,6 +26,17 @@ typedef double           					*PDB64;
 typedef unsigned long long int              *PUL64;
 typedef signed long long int                *PSL64;
 
+typedef unsigned short   			BUS16;
+typedef signed short     			BSS16;
+typedef unsigned char    			BUB08;
+typedef signed char      			BSB08;
+typedef unsigned long    			BUL32;
+typedef signed long      			BSL32;
+typedef float            			BFT32;
+typedef double           			BDB64;
+typedef unsigned long long int      BUL64;
+typedef signed long long int        BSL64;
+
 
 //--------------------------------------------------------------------------
 #define US16_MAX	(0xFFFF)
