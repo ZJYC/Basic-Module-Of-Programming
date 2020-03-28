@@ -880,3 +880,22 @@ SetValOfPosDB64,
 
 #pragma endregion
 
+#pragma region 内存复制
+
+static BOOL MemCpy(PUB08 Src, PUB08 Dst, BUL32 Len, BOOL Reverse) {
+    if (Src == NULL || Dst == NULL || Len == NULL)return eFAIL;
+
+    Dst += (Reverse == eFAIL ? 0 : Len - 1);
+
+    while (Len--) {
+        if (Reverse == eFAIL) {
+            *(Dst++) = *(Src++);
+        }
+        if (Reverse == eTRUE) {
+            *(Dst--) = *(Src++);
+        }
+    }
+
+    return eTRUE;
+}
+#pragma endregion
