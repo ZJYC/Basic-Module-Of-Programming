@@ -777,7 +777,106 @@ RINGBUFFER_NEW(Tst, 1024);
 
 #pragma endregion
 
+#pragma region 数字操作
 
+//GetValOfPos(123456,2,10) ==> 4
+//GetValOfPos(0x123456,2,16) ==> 4
+static BUB08 GetValOfPosSL32(BSL32 Input, BUB08 Pos, BUB08 Base) {
+    if (Base == NULL)return NULL;
 
+    BUB08 i = NULL, Res = NULL;
+    BSL32 Temp = Input, Divider = 1;
 
+    while ((i++) < Pos) {
+        Divider *= Base;
+    }
+
+    Res = Temp / Divider % Base;
+
+    return Res;
+
+}
+//SetValOfPos(123456,2,10,6) ==> 123656
+static BSL32 SetValOfPosSL32(BSL32 Input, BUB08 Pos, BUB08 Base,BUB08 Val) {
+    if (Base == NULL)return NULL;
+
+    BUB08 MaxLen = 10, i = NULL, Res = NULL;
+    BSL32 Temp = Input, Divider = 1;
+
+    while ((i++) < Pos) {
+        Divider *= Base;
+    }
+
+    Res = Temp / Divider % Base;
+    Temp -= Res * Divider;
+    Temp += Val * Divider;
+
+    return Temp;
+}
+//GetValOfPosDB64(1234.5678, 2) ==> 3
+//GetValOfPosDB64(1234.5678, -1) ==> 5
+static BUB08 GetValOfPosDB64(BDB64 Input, BSB08 Pos) {
+    BUB08 Base = 10;
+    BDB64 Temp = Input;
+    while (Pos < 0) {
+        Temp *= Base;
+        Pos += 1;
+    }
+
+    BUB08 i = NULL, Res = NULL;
+    BSL32 Divider = 1;
+
+    while ((i++) < Pos) {
+        Divider *= Base;
+    }
+
+    Res = (BSL32)Temp / Divider % Base;
+
+    return Res;
+}
+//SetValOfPosDB64(1234.5678, 1,4) ==> 1244.5678
+//SetValOfPosDB64(1234.5678, -1,4) ==> 1234.4678
+static BDB64 SetValOfPosDB64(BDB64 Input, BSB08 Pos, BUB08 Val) {
+    BUB08 Base = 10,Amp = NULL;
+    BDB64 Temp = Input;
+    while (Pos < 0) {
+        Temp *= Base;
+        Pos += 1;
+        Amp += 1;
+    }
+
+    BUB08 i = NULL, Res = NULL;
+    BSL32 Divider = 1;
+
+    while ((i++) < Pos) {
+        Divider *= Base;
+    }
+
+    Res = (BSL32)Temp / Divider % Base;
+
+    Temp -= Res * Divider;
+    Temp += Val * Divider;
+
+    while ((Amp--) > NULL) {
+        Temp /= Base;
+    }
+
+    return Temp;
+}
+
+typedef struct {
+    BUB08 (*GetValOfPosSL32)(BSL32 Input, BUB08 Pos, BUB08 Base);
+    BSL32 (*SetValOfPosSL32)(BSL32 Input, BUB08 Pos, BUB08 Base,BUB08 Val);
+    BUB08 (*GetValOfPosDB64)(BDB64 Input, BSB08 Pos);
+    BDB64 (*SetValOfPosDB64)(BDB64 Input, BSB08 Pos, BUB08 Val);
+}S_Num;
+
+S_Num Num = {
+GetValOfPosSL32,
+SetValOfPosSL32,
+GetValOfPosDB64,
+SetValOfPosDB64,
+};
+
+#pragma endregion
 
