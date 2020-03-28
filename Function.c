@@ -347,24 +347,54 @@ switch(Step){
 }
 #endif
 
-#pragma region Convert
+#pragma region 字序转换
+typedef enum {
+    BigOrder = 0,
+    SmlOrder = 1,
+}E_ByteOrder;
+
+static PUB08 US16_2_UB08(BUS16 Input, E_ByteOrder OutputOrder);
+static PUB08 SS16_2_UB08(BSS16 Input, E_ByteOrder OutputOrder);
+static PUB08 UL32_2_UB08(BUL32 Input, E_ByteOrder OutputOrder);
+static PUB08 SL32_2_UB08(BSL32 Input, E_ByteOrder OutputOrder);
+static PUB08 FT32_2_UB08(BFT32 Input, E_ByteOrder OutputOrder);
+static BUS16 UB08_2_US16(PUB08 Input, E_ByteOrder InputOrderx);
+static BSS16 UB08_2_SS16(PUB08 Input, E_ByteOrder InputOrderx);
+static BUL32 UB08_2_UL32(PUB08 Input, E_ByteOrder InputOrderx);
+static BSL32 UB08_2_SL32(PUB08 Input, E_ByteOrder InputOrderx);
+static BFT32 UB08_2_FT32(PUB08 Input, E_ByteOrder InputOrderx);
+
 typedef struct {
-    UB08*(*US16_2_UB08)(US16 Input, BOOL Reverse);
-    UB08*(*SS16_2_UB08)(SS16 Input, BOOL Reverse);
-    UB08*(*UL32_2_UB08)(UL32 Input, BOOL Reverse);
-    UB08*(*SL32_2_UB08)(SL32 Input, BOOL Reverse);
-    UB08*(*FT32_2_UB08)(FT32 Input, BOOL Reverse);
-    US16(*UB08_2_US16)(UB08* Input, BOOL Reverse);
-    SS16(*UB08_2_SS16)(UB08* Input, BOOL Reverse);
-    UL32(*UB08_2_UL32)(UB08* Input, BOOL Reverse);
-    SL32(*UB08_2_SL32)(UB08* Input, BOOL Reverse);
-    FT32(*UB08_2_FT32)(UB08* Input, BOOL Reverse);
+    PUB08(*US16_2_UB08)(BUS16 Input, E_ByteOrder OutputOrder);
+    PUB08(*SS16_2_UB08)(BSS16 Input, E_ByteOrder OutputOrder);
+    PUB08(*UL32_2_UB08)(BUL32 Input, E_ByteOrder OutputOrder);
+    PUB08(*SL32_2_UB08)(BSL32 Input, E_ByteOrder OutputOrder);
+    PUB08(*FT32_2_UB08)(BFT32 Input, E_ByteOrder OutputOrder);
+    BUS16(*UB08_2_US16)(PUB08 Input, E_ByteOrder InputOrderx);
+    BSS16(*UB08_2_SS16)(PUB08 Input, E_ByteOrder InputOrderx);
+    BUL32(*UB08_2_UL32)(PUB08 Input, E_ByteOrder InputOrderx);
+    BSL32(*UB08_2_SL32)(PUB08 Input, E_ByteOrder InputOrderx);
+    BFT32(*UB08_2_FT32)(PUB08 Input, E_ByteOrder InputOrderx);
+    E_ByteOrder LocalCpuOrder;
 }S_Convert;
 
-static UB08* US16_2_UB08(US16 Input, BOOL Reverse) {
+S_Convert Convert = {
+US16_2_UB08,SS16_2_UB08,
+UL32_2_UB08,SL32_2_UB08,
+FT32_2_UB08,
+UB08_2_US16,UB08_2_SS16,
+UB08_2_UL32,UB08_2_SL32,
+UB08_2_FT32,
+SmlOrder,
+};
+
+static PUB08 US16_2_UB08(BUS16 Input, E_ByteOrder OutputOrder) {
+    //Input 0x1234,
+    //OutputOrder:Big ==> [12] [34]
+    //OutputOrder:Sml ==> [34] [12]
     UB08 Temp[2] = { NULL };
 
-    if (Reverse == eFAIL) {
+    if (OutputOrder == BigOrder) {
         Temp[0] = (Input & 0xFF00) >> 8;
         Temp[1] = (Input & 0x00FF) >> 0;
     }
@@ -375,10 +405,14 @@ static UB08* US16_2_UB08(US16 Input, BOOL Reverse) {
 
     return Temp;
 }
-static UB08* SS16_2_UB08(SS16 Input, BOOL Reverse) {
+static PUB08 SS16_2_UB08(BSS16 Input, E_ByteOrder OutputOrder) {
+    //Input 0x1234,
+    //OutputOrder:Big ==> [12] [34]
+    //OutputOrder:Sml ==> [34] [12]
+
     UB08 Temp[2] = { NULL };
 
-    if (Reverse == eFAIL) {
+    if (OutputOrder == BigOrder) {
         Temp[0] = (Input & 0xFF00) >> 8;
         Temp[1] = (Input & 0x00FF) >> 0;
     }
@@ -389,10 +423,14 @@ static UB08* SS16_2_UB08(SS16 Input, BOOL Reverse) {
 
     return Temp;
 }
-static UB08* UL32_2_UB08(UL32 Input, BOOL Reverse) {
+static PUB08 UL32_2_UB08(BUL32 Input, E_ByteOrder OutputOrder) {
+    //Input 0x12345678
+    //OutputOrder:Big ==> [12] [34] [56] [78]
+    //OutputOrder:Sml ==> [78] [56] [34] [12]
+
     UB08 Temp[4] = { NULL };
 
-    if (Reverse == eFAIL) {
+    if (OutputOrder == BigOrder) {
         Temp[0] = (Input & 0xFF000000) >> 0x18;
         Temp[1] = (Input & 0x00FF0000) >> 0x10;
         Temp[2] = (Input & 0x0000FF00) >> 0x08;
@@ -407,10 +445,14 @@ static UB08* UL32_2_UB08(UL32 Input, BOOL Reverse) {
 
     return Temp;
 }
-static UB08* SL32_2_UB08(SL32 Input, BOOL Reverse) {
+static PUB08 SL32_2_UB08(BSL32 Input, E_ByteOrder OutputOrder) {
+    //Input 0x12345678
+    //OutputOrder:Big ==> [12] [34] [56] [78]
+    //OutputOrder:Sml ==> [78] [56] [34] [12]
+
     UB08 Temp[4] = { NULL };
 
-    if (Reverse == eFAIL) {
+    if (OutputOrder == BigOrder) {
         Temp[0] = (Input & 0xFF000000) >> 0x18;
         Temp[1] = (Input & 0x00FF0000) >> 0x10;
         Temp[2] = (Input & 0x0000FF00) >> 0x08;
@@ -425,17 +467,35 @@ static UB08* SL32_2_UB08(SL32 Input, BOOL Reverse) {
 
     return Temp;
 }
-static UB08* FT32_2_UB08(FT32 Input, BOOL Reverse) {
-    UB08 Temp[4] = { NULL };
-    UB08* p = (UB08*)&Input;
+static PUB08 FT32_2_UB08(BFT32 Input, E_ByteOrder OutputOrder) {
+    //Input 1.0
+    //LocalOrder:Big ==> [3F] [80] [00] [00] Output:Big ==> [3F] [80] [00] [00]
+    //LocalOrder:Big ==> [3F] [80] [00] [00] Output:Sml ==> [00] [00] [80] [3F]
+    //LocalOrder:Sml ==> [00] [00] [80] [3F] Output:Big ==> [3F] [80] [00] [00]
+    //LocalOrder:Sml ==> [00] [00] [80] [3F] Output:Sml ==> [00] [00] [80] [3F]
 
-    if (Reverse == eFAIL) {
+    BUB08 Temp[4] = { NULL };
+    PUB08 p = PUB08(&Input);
+
+    if (OutputOrder == BigOrder && Convert.LocalCpuOrder == BigOrder) {
+        Temp[0] = p[0];
+        Temp[1] = p[1];
+        Temp[2] = p[2];
+        Temp[3] = p[3];
+    }
+    if (OutputOrder == BigOrder && Convert.LocalCpuOrder == SmlOrder) {
         Temp[0] = p[3];
         Temp[1] = p[2];
         Temp[2] = p[1];
         Temp[3] = p[0];
     }
-    else {
+    if (OutputOrder == SmlOrder && Convert.LocalCpuOrder == BigOrder) {
+        Temp[0] = p[3];
+        Temp[1] = p[2];
+        Temp[2] = p[1];
+        Temp[3] = p[0];
+    }
+    if (OutputOrder == SmlOrder && Convert.LocalCpuOrder == SmlOrder) {
         Temp[0] = p[0];
         Temp[1] = p[1];
         Temp[2] = p[2];
@@ -444,47 +504,59 @@ static UB08* FT32_2_UB08(FT32 Input, BOOL Reverse) {
 
     return Temp;
 }
-static US16 UB08_2_US16(UB08* Input, BOOL Reverse) {
-    if (Input == NULL)return NULL;
-    US16 Temp = NULL;
+static BUS16 UB08_2_US16(PUB08 Input, E_ByteOrder InputOrderx) {
+    //Input [12][34]
+    //OutputOrder:Big ==> [1234]
+    //OutputOrder:Sml ==> [3412]
 
-    if (Reverse == eTRUE) {
+    if (Input == NULL)return NULL;
+    BUS16 Temp = NULL;
+
+    if (InputOrderx == BigOrder) {
         Temp |= (Input[0] << 0x08);
         Temp |= (Input[1] << 0x00);
     }
-    else {
+    if (InputOrderx == SmlOrder) {
         Temp |= (Input[1] << 0x08);
         Temp |= (Input[0] << 0x00);
     }
 
     return Temp;
 }
-static SS16 UB08_2_SS16(UB08* Input, BOOL Reverse) {
+static BSS16 UB08_2_SS16(PUB08 Input, E_ByteOrder InputOrderx) {
+    //Input [12][34]
+    //OutputOrder:Big ==> [1234]
+    //OutputOrder:Sml ==> [3412]
+
     if (Input == NULL)return NULL;
     SS16 Temp = NULL;
 
-    if (Reverse == eTRUE) {
+    if (InputOrderx == BigOrder) {
         Temp |= (Input[0] << 0x08);
         Temp |= (Input[1] << 0x00);
     }
-    else {
+    if (InputOrderx == SmlOrder){
         Temp |= (Input[1] << 0x08);
         Temp |= (Input[0] << 0x00);
     }
 
     return Temp;
 }
-static UL32 UB08_2_UL32(UB08* Input, BOOL Reverse) {
+static BUL32 UB08_2_UL32(PUB08 Input, E_ByteOrder InputOrderx) {
+    //Input [12][34][56][78]
+    //OutputOrder:Big ==> [12345678]
+    //OutputOrder:Sml ==> [78563412]
+
     if (Input == NULL)return NULL;
     UL32 Temp = NULL;
 
-    if (Reverse == eTRUE) {
+    if (InputOrderx == BigOrder) {
         Temp |= (Input[0] << 0x18);
         Temp |= (Input[1] << 0x10);
         Temp |= (Input[2] << 0x08);
         Temp |= (Input[3] << 0x00);
     }
-    else {
+    if (InputOrderx == SmlOrder) {
         Temp |= (Input[3] << 0x18);
         Temp |= (Input[2] << 0x10);
         Temp |= (Input[1] << 0x08);
@@ -493,17 +565,21 @@ static UL32 UB08_2_UL32(UB08* Input, BOOL Reverse) {
 
     return Temp;
 }
-static SL32 UB08_2_SL32(UB08* Input, BOOL Reverse) {
+static BSL32 UB08_2_SL32(PUB08 Input, E_ByteOrder InputOrderx) {
+    //Input [12][34][56][78]
+    //OutputOrder:Big ==> [12345678]
+    //OutputOrder:Sml ==> [78563412]
+
     if (Input == NULL)return NULL;
     SL32 Temp = NULL;
 
-    if (Reverse == eTRUE) {
+    if (InputOrderx == BigOrder) {
         Temp |= (Input[0] << 0x18);
         Temp |= (Input[1] << 0x10);
         Temp |= (Input[2] << 0x08);
         Temp |= (Input[3] << 0x00);
     }
-    else {
+    if (InputOrderx == SmlOrder) {
         Temp |= (Input[3] << 0x18);
         Temp |= (Input[2] << 0x10);
         Temp |= (Input[1] << 0x08);
@@ -512,43 +588,42 @@ static SL32 UB08_2_SL32(UB08* Input, BOOL Reverse) {
 
     return Temp;
 }
-static FT32 UB08_2_FT32(UB08* Input, BOOL Reverse) {
+static BFT32 UB08_2_FT32(PUB08 Input, E_ByteOrder InputOrderx) {
+    //Input [3F][80][00][00]
+    //Local:Sml ==> 
     if (Input == NULL)return NULL;
-    FT32 Temp = NULL;
-    UB08* p = (UB08*)&Temp;
+    BFT32 Temp = NULL;
+    PUB08 p = PUB08(&Temp);
 
-    if (Reverse == eTRUE) {
+    if (InputOrderx == BigOrder && Convert.LocalCpuOrder == BigOrder) {
         p[0] = Input[0];
         p[1] = Input[1];
         p[2] = Input[2];
         p[3] = Input[3];
     }
-    else {
+    if (InputOrderx == BigOrder && Convert.LocalCpuOrder == SmlOrder) {
         p[0] = Input[3];
         p[1] = Input[2];
         p[2] = Input[1];
         p[3] = Input[0];
     }
+    if (InputOrderx == SmlOrder && Convert.LocalCpuOrder == BigOrder) {
+        p[0] = Input[3];
+        p[1] = Input[2];
+        p[2] = Input[1];
+        p[3] = Input[0];
+    }
+    if (InputOrderx == SmlOrder && Convert.LocalCpuOrder == SmlOrder) {
+        p[0] = Input[0];
+        p[1] = Input[1];
+        p[2] = Input[2];
+        p[3] = Input[3];
+    }
 
     return Temp;
 }
 
-S_Convert Convert = {
-US16_2_UB08,
-SS16_2_UB08,
-UL32_2_UB08,
-SL32_2_UB08,
-FT32_2_UB08,
-UB08_2_US16,
-UB08_2_SS16,
-UB08_2_UL32,
-UB08_2_SL32,
-UB08_2_FT32,
-};
-
 #pragma endregion
-
-
 
 #if 1/* 另类字符串转数 */
 static UL32 S2B()
