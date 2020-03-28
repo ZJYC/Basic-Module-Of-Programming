@@ -329,7 +329,7 @@ CallbackExe(PNT0(Timer1BkGroup), MASK_FUNC, NULL);
 
 #pragma endregion
 
-#if 1/* 状态机 */
+#pragma region 状态机
 static UL32 Step = NULL;
 #define STEP_SETX(x)    {Step =  (x);}
 #define STEP_NEXT(x)    {Step += (x);}
@@ -345,7 +345,7 @@ switch(Step){
     default:
     break;
 }
-#endif
+#pragma endregion
 
 #pragma region 字序转换
 typedef enum {
@@ -624,11 +624,6 @@ static BFT32 UB08_2_FT32(PUB08 Input, E_ByteOrder InputOrderx) {
 }
 
 #pragma endregion
-
-#if 1/* 另类字符串转数 */
-static UL32 S2B()
-#endif
-
 
 #pragma region 环形缓冲区
 
