@@ -14,6 +14,7 @@ typedef float            					FT32;
 typedef double           					DB64;
 typedef unsigned long long int              UL64;
 typedef signed long long int                SL64;
+typedef void                				VOID;
 
 typedef unsigned short   					*PUS16;
 typedef signed short     					*PSS16;
@@ -25,6 +26,7 @@ typedef float            					*PFT32;
 typedef double           					*PDB64;
 typedef unsigned long long int              *PUL64;
 typedef signed long long int                *PSL64;
+typedef void                                *PVOID;
 
 typedef unsigned short   			BUS16;
 typedef signed short     			BSS16;
@@ -36,7 +38,7 @@ typedef float            			BFT32;
 typedef double           			BDB64;
 typedef unsigned long long int      BUL64;
 typedef signed long long int        BSL64;
-
+typedef void        				BVOID;
 
 //--------------------------------------------------------------------------
 #define US16_MAX	(0xFFFF)
@@ -59,7 +61,7 @@ typedef signed long long int        BSL64;
 #define FAIL		(0x00)
 #define PASS		(0x01)
 //Bool
-typedef enum {eFAIL = 0x00,eTRUE = 0x01,}BOOL;
+typedef enum {eFAIL = 0x00,eTRUE = 0x01,}EBOOL;
 
 //--------------------------------------------------------------------------
 #ifndef MIN

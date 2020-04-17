@@ -864,11 +864,21 @@ static BDB64 SetValOfPosDB64(BDB64 Input, BSB08 Pos, BUB08 Val) {
     return Temp;
 }
 
+static BUL32 Distance(BUL32 Smaller, BUL32 Bigger, BUL32 Max) {
+	if (Bigger >= Smaller) {
+		return (Bigger - Smaller);
+	}
+	else {
+		return (Bigger + Max - Smaller);
+	}
+}
+
 typedef struct {
     BUB08 (*GetValOfPosSL32)(BSL32 Input, BUB08 Pos, BUB08 Base);
     BSL32 (*SetValOfPosSL32)(BSL32 Input, BUB08 Pos, BUB08 Base,BUB08 Val);
     BUB08 (*GetValOfPosDB64)(BDB64 Input, BSB08 Pos);
     BDB64 (*SetValOfPosDB64)(BDB64 Input, BSB08 Pos, BUB08 Val);
+	BUL32 (*Distance)(BUL32 Smaller, BUL32 Bigger, BUL32 Max);
 }S_Num;
 
 S_Num Num = {
@@ -876,7 +886,11 @@ GetValOfPosSL32,
 SetValOfPosSL32,
 GetValOfPosDB64,
 SetValOfPosDB64,
+Distance,
 };
+
+
+
 
 #pragma endregion
 
