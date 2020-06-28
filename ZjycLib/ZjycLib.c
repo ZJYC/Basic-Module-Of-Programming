@@ -832,6 +832,32 @@ S_TableApi TableApi = {
 	SearchTable,
 };
 #pragma endregion
+#pragma region Èí¼þ¿´ÃÅ¹·
+static EBOOL SoftDogInit(PS_SoftDog pS_SoftDog, DogCbkFunc Cbkf,BUL32 Max) {
+	if (pS_SoftDog == NULL)return eFAIL;
+	pS_SoftDog->Enable = 
+	pS_SoftDog->Cbkf = Cbkf;
+	pS_SoftDog->MaxCnt = Max;
+	pS_SoftDog->SelfCnt = NULL;
+	return eTRUE;
+}
+static EBOOL SoftDogLoop(PS_SoftDog pS_SoftDog, BUS16 Interval) {
+	if (pS_SoftDog == NULL)return eFAIL;
+	pS_SoftDog->SelfCnt += Interval;
+	if (pS_SoftDog->SelfCnt > pS_SoftDog->MaxCnt) {
+		if (pS_SoftDog->Cbkf != NULL)pS_SoftDog->Cbkf(0x00);
+	}
+}
+static EBOOL SoftDogFeed(PS_SoftDog pS_SoftDog) {
+	if (pS_SoftDog == NULL)return eFAIL;
+	pS_SoftDog->SelfCnt = NULL;
+}
+S_SoftDogApi SoftDogApi = {
+.Init = SoftDogInit,
+.Loop = SoftDogLoop,
+.Feed = SoftDogFeed,
+};
+#pragma endregion
 
 
 

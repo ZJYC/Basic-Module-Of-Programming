@@ -161,7 +161,26 @@ typedef struct {
 }S_TableApi;
 extern S_TableApi TableApi;
 #pragma endregion
+#pragma region Èí¼þ¿´ÃÅ¹·
 
+typedef EBOOL(*DogCbkFunc)(BUB08 Typ);
+
+typedef struct {
+	EBOOL Enable;
+	BUL32 SelfCnt;
+	BUL32 MaxCnt;
+	DogCbkFunc Cbkf;
+}S_SoftDog, *PS_SoftDog;
+
+typedef struct {
+	EBOOL(*Init)(PS_SoftDog pS_SoftDog, BUL32 Max);
+	EBOOL(*Loop)(PS_SoftDog pS_SoftDog, BUS16 Interval);
+	EBOOL(*Feed)(PS_SoftDog pS_SoftDog);
+}S_SoftDogApi;
+
+extern S_SoftDogApi SoftDogApi;
+
+#pragma endregion
 
 
 
