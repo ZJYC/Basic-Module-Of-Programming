@@ -1,150 +1,153 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "LinkedList.h"
 #include "Heap5.h"
 
-#define MALLOC	MM_Ops.Malloc
-#define FREE	MM_Ops.Free
-
-/* Creates a list (node) and returns it
- * Arguments: The data the list will contain or NULL to create an empty
- * list/node
- */
-static PS_LinkNode Create(PVOID data) {
-	PS_LinkNode l = MALLOC(sizeof(S_LinkNode));
-	if (l != NULL) {
-		l->next = NULL;
-		l->data = data;
+#define MALLOC	MemApi.Malloc
+#define FREE	MemApi.Free
+//创建节点
+static PS_ListNode NodeCreate(BUL32 Data) {
+	PS_ListNode Node = MALLOC(SIZE(S_ListNode));
+	if (Node != NULL) {
+		Node->Next = NULL;
+		Node->Data = Data;
 	}
-	return l;
+	return Node;
 }
-
-/* Completely destroys a list
- * Arguments: A pointer to a pointer to a list
- */
-static BVOID Destroy(PPS_LinkNode list) {
-	if (list == NULL) return;
-	while (*list != NULL) {
-		Remove(list, *list);
-	}
+//添加节点到末尾
+static EBOOL NodeAddToEnd(PS_ListNode Header,PS_ListNode Node) {
+	if (Header == NULL || Node == NULL)return eFAIL;
+	for (Header = Header; Header->Next != NULL; Header = Header->Next);
+	Header->Next = Node;
+	return eTRUE;
 }
-
-/* Creates a list node and inserts it after the specified node
- * Arguments: A node to insert after and the data the new node will contain
- */
-static PS_LinkNode InsertAfter(PS_LinkNode node, PVOID data) {
-	PS_LinkNode new_node = Create(data);
-	if (new_node) {
-		new_node->next = node->next;
-		node->next = new_node;
-	}
-	return new_node;
+//添加节点到列表首
+static EBOOL NodeAddToBgn(PS_ListNode Header, PS_ListNode Node) {
+	if (Header == NULL || Node == NULL)return eFAIL;
+	Node->Next = Header->Next;
+	Header->Next = Node;
+	return eTRUE;
 }
-
-/* Creates a new list node and inserts it in the beginning of the list
- * Arguments: The list the node will be inserted to and the data the node will
- * contain
- */
-static PS_LinkNode InsertBeginning(PS_LinkNode list, PVOID data) {
-	PS_LinkNode new_node = Create(data);
-	if (new_node != NULL) { new_node->next = list; }
-	return new_node;
-}
-
-/* Creates a new list node and inserts it at the end of the list
- * Arguments: The list the node will be inserted to and the data the node will
- * contain
- */
-static PS_LinkNode InsertEnd(PS_LinkNode list, PVOID data) {
-	PS_LinkNode new_node = Create(data);
-	if (new_node != NULL) {
-		for (PS_LinkNode it = list; it != NULL; it = it->next) {
-			if (it->next == NULL) {
-				it->next = new_node;
-				break;
-			}
+//使用函数遍历整个列表
+static EBOOL NodeTraversalWithFuc(PS_ListNode Header, MapFunc Map, BUL32 MapParam) {
+	if (Header == NULL || Map == NULL)return eFAIL;
+	for (Header = Header; Header != NULL; Header = Header->Next) {
+		if (Map != NULL) {
+			Map(Header, MapParam);
+		}
+		else {
+			return NULL;
 		}
 	}
-	return new_node;
+	return eTRUE;
 }
+//使用函数查找整个列表
+static PS_ListNode NodeFindFirstWithFuc(PS_ListNode Header, MapFunc Map, BUL32 MapParam) {
+	if (Header == NULL || Map == NULL)return eFAIL;
+	for (Header = Header; Header != NULL; Header = Header->Next) {
+		if (Map != NULL) {
+			if(Map(Header, MapParam) == eTRUE)return Header;
+		}
+		else {
+			return NULL;
+		}
+	}
+	return NULL;
+}
+//函数：查找数据
+static EBOOL MapFunc_Data(PS_ListNode Node, BUL32 Data) {
+	if (Node == NULL)return eFAIL;
+	if (Node->Data == Data)return eTRUE;
+	return eFAIL;
+}
+//删除某个节点
+static EBOOL NodeDel(PS_ListNode Header, PS_ListNode Node) {
+	if (Header == NULL || Node == NULL)return eFAIL;
+	if (Node == Header) {
+		return eFAIL;
+	}
+	for (Header = Header; Header->Next != NULL; Header = Header->Next) {
+		if (Header->Next == Node) {
+			PS_ListNode Fore, Betn, Back;
+			Fore = Header;
+			Betn = Header->Next;
+			Back = (Betn == NULL ? NULL : Betn->Next);
+			Fore->Next = Back;
+			FREE((PVOID)Node);
+			return eTRUE;
+		}
+	}
+	return eFAIL;
+}
+//根据数据删除某个节点
+static EBOOL NodeDelByData(PS_ListNode Header, BUL32 Data) {
+	if (Header == NULL)return eFAIL;
 
-/* Removes a node from the list
- * Arguments: The list and the node that will be removed
- */
-static BVOID Remove(PPS_LinkNode list, PS_LinkNode node) {
-	PS_LinkNode tmp = NULL;
-	if (list == NULL || *list == NULL || node == NULL) return;
+	PS_ListNode Find = NodeFindFirstWithFuc(Header, MapFunc_Data, Data);
 
-	if (*list == node) {
-		*list = (*list)->next;
-		FREE(node);
-		node = NULL;
+	if (Find != NULL) {
+		NodeDel(Header, Find);
+		return eTRUE;
 	}
 	else {
-		tmp = *list;
-		while (tmp->next && tmp->next != node) tmp = tmp->next;
-		if (tmp->next) {
-			tmp->next = node->next;
-			FREE(node);
-			node = NULL;
+		return eFAIL;
+	}
+	
+
+}
+//根据索引删除某个节点
+static EBOOL NodeDelByIndex(PS_ListNode Header, BUL32 Index) {
+	if (Header == NULL || Index == NULL)return eFAIL;
+	BUL32 Cnt = NULL;
+	for (PS_ListNode Node = Header; Node != NULL; Node = Node->Next, Cnt++) {
+		if (Cnt == Index && Node != NULL) {
+			NodeDel(Header,Node);
+			return eTRUE;
 		}
 	}
+	return eFAIL;
 }
-
-/* Removes an element from a list by comparing the data pointers
- * Arguments: A pointer to a pointer to a list and the pointer to the data
- */
-static BVOID RemoveByData(PPS_LinkNodelist, PVOID data) {
-	if (list == NULL || *list == NULL || data == NULL) return;
-	Remove(list, FindByData(*list, data));
+//打印每一个节点的信息
+static EBOOL MapFunc_Printf(PS_ListNode Node, BUL32 Data) {
+	if (Node == NULL)return eFAIL;
+	printf("0x%08X\r\n", Node->Data);
 }
-
-/* Find an element in a list by the pointer to the element
- * Arguments: A pointer to a list and a pointer to the node/element
- */
-static PS_LinkNode FindNode(PS_LinkNode list, PS_LinkNode node) {
-	while (list) {
-		if (list == node) break;
-		list = list->next;
-	}
-	return list;
+static EBOOL NodePrintfAllData(PS_ListNode Header) {
+	if (Header == NULL)return eFAIL;
+	NodeTraversalWithFuc(Header, MapFunc_Printf, NULL);
 }
-
-/* Finds an elemt in a list by the data pointer
- * Arguments: A pointer to a list and a pointer to the data
- */
-static PS_LinkNode FindByData(PS_LinkNode list, PVOID data) {
-	while (list) {
-		if (list->data == data) break;
-		list = list->next;
-	}
-	return list;
+//排序函数(返回eTRUE触发交换)
+static EBOOL SortFunc(PS_ListNode Node1, PS_ListNode Node2) {
+	if (Node1 == NULL || Node2 == NULL)return eFAIL;
+	if (Node1->Data >= Node2->Data)return eTRUE;
+	return eFAIL;
 }
+//数值交换
+static EBOOL NodeSwapData(PS_ListNode Node1, PS_ListNode Node2) {
+	if (Node1 == NULL || Node2 == NULL)return eFAIL;
+	BUL32 Mid = Node1->Data;
+	Node1->Data = Node2->Data;
+	Node2->Data = Mid;
+	return eTRUE;
+}
+static EBOOL NodeSwapByDataS2B(PS_ListNode Header) {
+	if (Header == NULL)return eFAIL;
 
-/* Finds an element in the list by using the comparison function
- * Arguments: A pointer to a list, the comparison function and a pointer to the
- * data
- */
-static PS_LinkNode Find(PS_LinkNode list, int(*func)(PS_LinkNode, PVOID), PVOID data) {
-	if (!func) return NULL;
-	while (list) {
-		if (func(list, data)) break;
-		list = list->next;
-	}
-	return list;
+	
+
 }
 
 S_LinkedApi LinkedApi = {
-	.Create = Create,
-	.Destroy = Destroy,
-	.InsertAfter = InsertAfter,
-	.InsertBeginning = InsertBeginning,
-	.InsertEnd = InsertEnd,
-	.Remove = Remove,
-	.RemoveByData = RemoveByData,
-	.FindNode = FindNode,
-	.FindByData = FindByData,
-	.Find = Find,
+.NodeCreate = NodeCreate,
+.NodeAddToEnd = NodeAddToEnd,
+.NodeAddToBgn = NodeAddToBgn,
+.NodeTraversalWithFuc = NodeTraversalWithFuc,
+.NodeFindFirstWithFuc = NodeFindFirstWithFuc,
+.NodeDel = NodeDel,
+.NodeDelByData = NodeDelByData,
+.NodeDelByIndex = NodeDelByIndex,
+.NodePrintfAllData = NodePrintfAllData,
 };
 
 

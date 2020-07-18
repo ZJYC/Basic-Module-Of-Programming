@@ -16,29 +16,19 @@ extern "C" {
 
 #define configASSERT        assert
 
-#ifndef uint8_t
-#define uint8_t unsigned char
-#endif
-
-#ifndef uint32_t
-#define uint32_t unsigned int
-#endif
-
 typedef struct HeapRegion{
-	uint8_t *pucStartAddress;
-	uint32_t xSizeInBytes;
+	BUB08 *pucStartAddress;
+	BUL32 xSizeInBytes;
 } HeapRegion_t;
 
-
 typedef struct MM_OpsTypedef_{
-	void(*Init)(const HeapRegion_t * const pxHeapRegions);
-	void *(*Malloc)(uint32_t xWantedSize);
-	void(*Free)(void *pv);
-	uint32_t(*HeapSize)(void);
+	BVOID(*Init)();
+	PVOID(*Malloc)(BUL32 xWantedSize);
+	BVOID(*Free)(PVOID pv);
+	BUL32(*HeapSize)();
+}S_MemApi, *PS_MemApi;
 
-}MM_OpsTypedef, *pMM_OpsTypedef;
-
-extern MM_OpsTypedef MM_Ops;
+extern S_MemApi MemApi;
 
 #ifdef __cplusplus
 }

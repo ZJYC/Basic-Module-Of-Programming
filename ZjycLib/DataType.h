@@ -42,8 +42,8 @@ typedef float                       *PFT32;
 typedef double                      *PDB64;
 typedef unsigned long long int      *PUL64;
 typedef signed long long int        *PSL64;
-typedef void						*PVOID;
-typedef void					   **PPVOD;
+typedef BVOID						*PVOID;
+typedef BVOID					   **PPVOD;
 
 #define US16_MAX					(0xFFFF)
 #define US16_MIN					(0x0000)
@@ -91,6 +91,7 @@ typedef union {
 }ByteConvert;
 
 #define ENUM(x)	(sizeof(x)/sizeof((x)[0]))
+#define SIZE(x)	(sizeof(x))
 
 #define ABS(n)     (((n) < 0) ? -(n) : (n))
 

@@ -5,84 +5,49 @@ vPortDefineHeapRegions()只有一个参数，参数是一个
 HeapRegion_t结构的数组，HeapRegion定义如下：
 typedef struct HeapRegion
 {
-	uint8_t *pucStartAddress; << 首地址
-	uint32_t xSizeInBytes;      << 大小
+	BUB08 *pucStartAddress; << 首地址
+	BUL32 xSizeInBytes;      << 大小
 } HeapRegion_t;
 数组以NULL结尾，而且，数组必须的从低到高书写，如下：
 HeapRegion_t xHeapRegions[] =
 {
-	{ ( uint8_t * ) 0x80000000UL, 0x10000 }, << 定义0x10000字节 开始于0x80000000
-	{ ( uint8_t * ) 0x90000000UL, 0xa0000 }, << 定义0xa0000字节 开始于0x90000000
+	{ ( BUB08 * ) 0x80000000UL, 0x10000 }, << 定义0x10000字节 开始于0x80000000
+	{ ( BUB08 * ) 0x90000000UL, 0xa0000 }, << 定义0xa0000字节 开始于0x90000000
 	{ NULL, 0 }                << Terminates the array.
 };
 vPortDefineHeapRegions( xHeapRegions ); << 传递数组到函数
 */
 
 #include <stdlib.h>
-#include "heap_5.h"
-/* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
-all the API functions to use the MPU wrappers.  That should only be done when
-task.h is included from an application file. */
-#define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
+#include "DataType.h"
+#include "heap5.h"
 
-//#include "FreeRTOS.h"
-//#include "task.h"
-
-#undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
-
-//#if( configSUPPORT_DYNAMIC_ALLOCATION == 0 )
-//    #error This file must not be used if configSUPPORT_DYNAMIC_ALLOCATION is 0
-//#endif
-
+/*  内存块在这里*/
+static BUB08 MemPool1[10 * 1024] = { NULL };
+static HeapRegion_t xHeapRegions[] = {
+	{ (BUB08 *)MemPool1, 10 * 1024 },// << 定义0x10000字节 开始于0x80000000
+	{ NULL, 0 }// << Terminates the array.
+};
 /* 块大小不应太小*/
-#define heapMINIMUM_BLOCK_SIZE  ( ( uint32_t ) ( xHeapStructSize << 1 ) )
-
+#define heapMINIMUM_BLOCK_SIZE  ( ( BUL32 ) ( xHeapStructSize << 1 ) )
 /* 每一字节8位 */
-#define heapBITS_PER_BYTE       ( ( uint32_t ) 8 )
-
+#define heapBITS_PER_BYTE       ( ( BUL32 ) 8 )
 /* 定义链表结构体，用于根据内存地址连接空闲块 */
-typedef struct A_BLOCK_LINK
-{
+typedef struct A_BLOCK_LINK{
 	struct A_BLOCK_LINK *pxNextFreeBlock;   /*<< 下一个空闲块 */
-	uint32_t xBlockSize;                      /*<< 空闲块大小 */
+	BUL32 xBlockSize;                      /*<< 空闲块大小 */
 } BlockLink_t;
 
-/*-----------------------------------------------------------*/
-
-/*
- * Inserts a block of memory that is being freed into the correct position in
- * the list of free memory blocks.  The block being freed will be merged with
- * the block in front it and/or the block behind it if the memory blocks are
- * adjacent to each other.
- */
-static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert);
-
-/*-----------------------------------------------------------*/
-
-/* The size of the structure placed at the beginning of each allocated memory
-block must by correctly byte aligned. */
-static const uint32_t xHeapStructSize = (sizeof(BlockLink_t) + ((uint32_t)(portBYTE_ALIGNMENT - 1))) & ~((uint32_t)portBYTE_ALIGNMENT_MASK);
-
-/* Create a couple of list links to mark the start and end of the list. */
+static BVOID prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert);
+static const BUL32 xHeapStructSize = (sizeof(BlockLink_t) + ((BUL32)(portBYTE_ALIGNMENT - 1))) & ~((BUL32)portBYTE_ALIGNMENT_MASK);
 static BlockLink_t xStart, *pxEnd = NULL;
+static BUL32 xFreeBytesRemaining = 0U;
+static BUL32 xMinimumEverFreeBytesRemaining = 0U;
+static BUL32 xBlockAllocatedBit = 0;
 
-/* Keeps track of the number of free bytes remaining, but says nothing about
-fragmentation. */
-static uint32_t xFreeBytesRemaining = 0U;
-static uint32_t xMinimumEverFreeBytesRemaining = 0U;
-
-/* Gets set to the top bit of an uint32_t type.  When this bit in the xBlockSize
-member of an BlockLink_t structure is set then the block belongs to the
-application.  When the bit is free the block is still part of the free heap
-space. */
-static uint32_t xBlockAllocatedBit = 0;
-
-/*-----------------------------------------------------------*/
-
-static void *pvPortMalloc(uint32_t xWantedSize)
-{
+static BVOID *pvPortMalloc(BUL32 xWantedSize){
 	BlockLink_t *pxBlock, *pxPreviousBlock, *pxNewBlockLink;
-	void *pvReturn = NULL;
+	BVOID *pvReturn = NULL;
 
 	/* The heap must be initialised before the first call to
 	prvPortMalloc(). */
@@ -137,7 +102,7 @@ static void *pvPortMalloc(uint32_t xWantedSize)
 				{
 					/* Return the memory space pointed to - jumping over the
 					BlockLink_t structure at its start. */
-					pvReturn = (void *)(((uint8_t *)pxPreviousBlock->pxNextFreeBlock) + xHeapStructSize);
+					pvReturn = (BVOID *)(((BUB08 *)pxPreviousBlock->pxNextFreeBlock) + xHeapStructSize);
 
 					/* This block is being returned for use so must be taken out
 					of the list of free blocks. */
@@ -148,10 +113,10 @@ static void *pvPortMalloc(uint32_t xWantedSize)
 					if ((pxBlock->xBlockSize - xWantedSize) > heapMINIMUM_BLOCK_SIZE)
 					{
 						/* This block is to be split into two.  Create a new
-						block following the number of bytes requested. The void
+						block following the number of bytes requested. The BVOID
 						cast is used to prevent byte alignment warnings from the
 						compiler. */
-						pxNewBlockLink = (void *)(((uint8_t *)pxBlock) + xWantedSize);
+						pxNewBlockLink = (BVOID *)(((BUB08 *)pxBlock) + xWantedSize);
 
 						/* Calculate the sizes of two blocks split from the
 						single block. */
@@ -199,13 +164,13 @@ static void *pvPortMalloc(uint32_t xWantedSize)
 
 		//traceMALLOC( pvReturn, xWantedSize );
 	}
-	//( void ) xTaskResumeAll();
+	//( BVOID ) xTaskResumeAll();
 
 #if( configUSE_MALLOC_FAILED_HOOK == 1 )
 	{
 		if (pvReturn == NULL)
 		{
-			extern void vApplicationMallocFailedHook(void);
+			extern BVOID vApplicationMallocFailedHook(BVOID);
 			vApplicationMallocFailedHook();
 		}
 		else
@@ -217,11 +182,8 @@ static void *pvPortMalloc(uint32_t xWantedSize)
 
 	return pvReturn;
 }
-/*-----------------------------------------------------------*/
-
-static void vPortFree(void *pv)
-{
-	uint8_t *puc = (uint8_t *)pv;
+static BVOID vPortFree(BVOID *pv){
+	BUB08 *puc = (BUB08 *)pv;
 	BlockLink_t *pxLink;
 
 	if (pv != NULL)
@@ -231,7 +193,7 @@ static void vPortFree(void *pv)
 		puc -= xHeapStructSize;
 
 		/* This casting is to keep the compiler from issuing warnings. */
-		pxLink = (void *)puc;
+		pxLink = (BVOID *)puc;
 
 		/* Check the block is actually allocated. */
 		configASSERT((pxLink->xBlockSize & xBlockAllocatedBit) != 0);
@@ -252,7 +214,7 @@ static void vPortFree(void *pv)
 					//traceFREE( pv, pxLink->xBlockSize );
 					prvInsertBlockIntoFreeList(((BlockLink_t *)pxLink));
 				}
-				//( void ) xTaskResumeAll();
+				//( BVOID ) xTaskResumeAll();
 			}
 			else
 			{
@@ -265,24 +227,17 @@ static void vPortFree(void *pv)
 		}
 	}
 }
-/*-----------------------------------------------------------*/
-
-static uint32_t xPortGetFreeHeapSize(void)
-{
+static BUL32 xPortGetFreeHeapSize(){
 	return xFreeBytesRemaining;
 }
-/*-----------------------------------------------------------*/
-
-static uint32_t xPortGetMinimumEverFreeHeapSize(void)
+static BUL32 xPortGetMinimumEverFreeHeapSize()
 {
 	return xMinimumEverFreeBytesRemaining;
 }
-/*-----------------------------------------------------------*/
-
-static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert)
+static BVOID prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert)
 {
 	BlockLink_t *pxIterator;
-	uint8_t *puc;
+	BUB08 *puc;
 
 	/* Iterate through the list until a block is found that has a higher address
 	than the block being inserted. */
@@ -293,8 +248,8 @@ static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert)
 
 	/* Do the block being inserted, and the block it is being inserted after
 	make a contiguous block of memory? */
-	puc = (uint8_t *)pxIterator;
-	if ((puc + pxIterator->xBlockSize) == (uint8_t *)pxBlockToInsert)
+	puc = (BUB08 *)pxIterator;
+	if ((puc + pxIterator->xBlockSize) == (BUB08 *)pxBlockToInsert)
 	{
 		pxIterator->xBlockSize += pxBlockToInsert->xBlockSize;
 		pxBlockToInsert = pxIterator;
@@ -306,8 +261,8 @@ static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert)
 
 	/* Do the block being inserted, and the block it is being inserted before
 	make a contiguous block of memory? */
-	puc = (uint8_t *)pxBlockToInsert;
-	if ((puc + pxBlockToInsert->xBlockSize) == (uint8_t *)pxIterator->pxNextFreeBlock)
+	puc = (BUB08 *)pxBlockToInsert;
+	if ((puc + pxBlockToInsert->xBlockSize) == (BUB08 *)pxIterator->pxNextFreeBlock)
 	{
 		if (pxIterator->pxNextFreeBlock != pxEnd)
 		{
@@ -338,15 +293,13 @@ static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert)
 		mtCOVERAGE_TEST_MARKER();
 	}
 }
-/*-----------------------------------------------------------*/
-
-static void vPortDefineHeapRegions(const HeapRegion_t * const pxHeapRegions)
+static BVOID vPortDefineHeapRegions(const HeapRegion_t * const pxHeapRegions)
 {
 	BlockLink_t *pxFirstFreeBlockInRegion = NULL, *pxPreviousFreeBlock;
-	uint32_t xAlignedHeap;
-	uint32_t xTotalRegionSize, xTotalHeapSize = 0;
-	uint32_t xDefinedRegions = 0;
-	uint32_t xAddress;
+	BUL32 xAlignedHeap;
+	BUL32 xTotalRegionSize, xTotalHeapSize = 0;
+	BUL32 xDefinedRegions = 0;
+	BUL32 xAddress;
 	const HeapRegion_t *pxHeapRegion;
 
 	/* Can only call once! */
@@ -359,14 +312,14 @@ static void vPortDefineHeapRegions(const HeapRegion_t * const pxHeapRegions)
 		xTotalRegionSize = pxHeapRegion->xSizeInBytes;
 
 		/* Ensure the heap region starts on a correctly aligned boundary. */
-		xAddress = (uint32_t)pxHeapRegion->pucStartAddress;
+		xAddress = (BUL32)pxHeapRegion->pucStartAddress;
 		if ((xAddress & portBYTE_ALIGNMENT_MASK) != 0)
 		{
 			xAddress += (portBYTE_ALIGNMENT - 1);
 			xAddress &= ~portBYTE_ALIGNMENT_MASK;
 
 			/* Adjust the size for the bytes lost to alignment. */
-			xTotalRegionSize -= xAddress - (uint32_t)pxHeapRegion->pucStartAddress;
+			xTotalRegionSize -= xAddress - (BUL32)pxHeapRegion->pucStartAddress;
 		}
 
 		xAlignedHeap = xAddress;
@@ -375,9 +328,9 @@ static void vPortDefineHeapRegions(const HeapRegion_t * const pxHeapRegions)
 		if (xDefinedRegions == 0)
 		{
 			/* xStart is used to hold a pointer to the first item in the list of
-			free blocks.  The void cast is used to prevent compiler warnings. */
+			free blocks.  The BVOID cast is used to prevent compiler warnings. */
 			xStart.pxNextFreeBlock = (BlockLink_t *)xAlignedHeap;
-			xStart.xBlockSize = (uint32_t)0;
+			xStart.xBlockSize = (BUL32)0;
 		}
 		else
 		{
@@ -386,7 +339,7 @@ static void vPortDefineHeapRegions(const HeapRegion_t * const pxHeapRegions)
 			configASSERT(pxEnd != NULL);
 
 			/* Check blocks are passed in with increasing start addresses. */
-			configASSERT(xAddress > (uint32_t)pxEnd);
+			configASSERT(xAddress > (BUL32)pxEnd);
 		}
 
 		/* Remember the location of the end marker in the previous region, if
@@ -406,7 +359,7 @@ static void vPortDefineHeapRegions(const HeapRegion_t * const pxHeapRegions)
 		sized to take up the entire heap region minus the space taken by the
 		free block structure. */
 		pxFirstFreeBlockInRegion = (BlockLink_t *)xAlignedHeap;
-		pxFirstFreeBlockInRegion->xBlockSize = xAddress - (uint32_t)pxFirstFreeBlockInRegion;
+		pxFirstFreeBlockInRegion->xBlockSize = xAddress - (BUL32)pxFirstFreeBlockInRegion;
 		pxFirstFreeBlockInRegion->pxNextFreeBlock = pxEnd;
 
 		/* If this is not the first region that makes up the entire heap space
@@ -429,13 +382,16 @@ static void vPortDefineHeapRegions(const HeapRegion_t * const pxHeapRegions)
 	/* Check something was actually defined before it is accessed. */
 	configASSERT(xTotalHeapSize);
 
-	/* Work out the position of the top bit in a uint32_t variable. */
-	xBlockAllocatedBit = ((uint32_t)1) << ((sizeof(uint32_t) * heapBITS_PER_BYTE) - 1);
+	/* Work out the position of the top bit in a BUL32 variable. */
+	xBlockAllocatedBit = ((BUL32)1) << ((sizeof(BUL32) * heapBITS_PER_BYTE) - 1);
+}
+static BVOID Init() {
+	vPortDefineHeapRegions(xHeapRegions);
 }
 
-MM_OpsTypedef MM_Ops =
-{
-	.Init = vPortDefineHeapRegions,
+
+S_MemApi MemApi ={
+	.Init = Init,
 	.Malloc = pvPortMalloc,
 	.Free = vPortFree,
 	.HeapSize = xPortGetFreeHeapSize
