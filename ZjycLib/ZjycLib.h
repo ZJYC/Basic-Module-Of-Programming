@@ -5,81 +5,82 @@
 
 #pragma region ƒ⁄¥Êœ‡πÿ
 typedef struct {
-    EBOOL (*MemCpy)(PUB08 Src, PUB08 Dst, BUL32 Len, EBOOL Reverse);
+	EBOOL(*MemCpy)(PUB08 Src, PUB08 Dst, BUL32 Len, EBOOL Reverse);
+	EBOOL(*MemCmp)(PUB08 Mem1, PUB08 Mem2, BUL32 Len);
 }S_Mem;
 extern S_Mem Mem;
 #pragma endregion
 #pragma region ◊÷–Ú◊™ªªœ‡πÿ
 typedef enum {
-    BigOrder = 0,
-    SmlOrder = 1,
+	BigOrder = 0,
+	SmlOrder = 1,
 }E_ByteOrder;
 typedef struct {
-    PUB08(*US16_2_UB08)(BUS16 Input, E_ByteOrder OutputOrder);
-    PUB08(*SS16_2_UB08)(BSS16 Input, E_ByteOrder OutputOrder);
-    PUB08(*UL32_2_UB08)(BUL32 Input, E_ByteOrder OutputOrder);
-    PUB08(*SL32_2_UB08)(BSL32 Input, E_ByteOrder OutputOrder);
-    PUB08(*FT32_2_UB08)(BFT32 Input, E_ByteOrder OutputOrder);
-    BUS16(*UB08_2_US16)(PUB08 Input, E_ByteOrder InputOrderx);
-    BSS16(*UB08_2_SS16)(PUB08 Input, E_ByteOrder InputOrderx);
-    BUL32(*UB08_2_UL32)(PUB08 Input, E_ByteOrder InputOrderx);
-    BSL32(*UB08_2_SL32)(PUB08 Input, E_ByteOrder InputOrderx);
-    BFT32(*UB08_2_FT32)(PUB08 Input, E_ByteOrder InputOrderx);
+	PUB08(*US16_2_UB08)(BUS16 Input, E_ByteOrder OutputOrder);
+	PUB08(*SS16_2_UB08)(BSS16 Input, E_ByteOrder OutputOrder);
+	PUB08(*UL32_2_UB08)(BUL32 Input, E_ByteOrder OutputOrder);
+	PUB08(*SL32_2_UB08)(BSL32 Input, E_ByteOrder OutputOrder);
+	PUB08(*FT32_2_UB08)(BFT32 Input, E_ByteOrder OutputOrder);
+	BUS16(*UB08_2_US16)(PUB08 Input, E_ByteOrder InputOrderx);
+	BSS16(*UB08_2_SS16)(PUB08 Input, E_ByteOrder InputOrderx);
+	BUL32(*UB08_2_UL32)(PUB08 Input, E_ByteOrder InputOrderx);
+	BSL32(*UB08_2_SL32)(PUB08 Input, E_ByteOrder InputOrderx);
+	BFT32(*UB08_2_FT32)(PUB08 Input, E_ByteOrder InputOrderx);
 	PUB08(*US16_2_UB08X)(BUS16 Input, PUB08 Output, E_ByteOrder OutputOrder);
 	PUB08(*SS16_2_UB08X)(BSS16 Input, PUB08 Output, E_ByteOrder OutputOrder);
 	PUB08(*UL32_2_UB08X)(BUL32 Input, PUB08 Output, E_ByteOrder OutputOrder);
 	PUB08(*SL32_2_UB08X)(BSL32 Input, PUB08 Output, E_ByteOrder OutputOrder);
 	PUB08(*FT32_2_UB08X)(BFT32 Input, PUB08 Output, E_ByteOrder OutputOrder);
 
-    E_ByteOrder LocalCpuOrder;
+	E_ByteOrder LocalCpuOrder;
 }S_Convert;
 extern S_Convert Convert;
 #pragma endregion
 #pragma region π˛œ£±Ì
 typedef struct {
-    BUL32(*JSHash)(PUB08 Data, BUL32 Length);
+	BUL32(*JSHash)(PUB08 Data, BUL32 Length);
 }S_JsHashApi;
 
 extern S_JsHashApi JsHashApi;
 #pragma endregion
 #pragma region CRC
 typedef struct {
-    BUS16 (*CRC16)(PUB08 pucFrame, BUS16 usLen);
+	BUS16(*CRC16)(PUB08 pucFrame, BUS16 usLen);
 }S_CrcApi;
 extern S_CrcApi CrcApi;
 #pragma endregion
 #pragma region Sem
 //–≈∫≈¡øΩ·ππÃÂ
 typedef struct {
-    EBOOL Occupied;
-    BUS16 Cnt;
+	EBOOL Occupied;
+	BUS16 Cnt;
 	BUS16 Max;
 }S_Sem, *PS_Sem;
 //Ω”ø⁄
 typedef struct {
-    EBOOL(*Init)(PS_Sem pSem, US16 SetValue);
-    EBOOL(*Take)(PS_Sem pSem);
-    EBOOL(*Give)(PS_Sem pSem);
-    EBOOL(*Peek)(PS_Sem pSem);
+	EBOOL(*Init)(PS_Sem pSem, US16 SetValue);
+	EBOOL(*Take)(PS_Sem pSem);
+	EBOOL(*Give)(PS_Sem pSem);
+	EBOOL(*Peek)(PS_Sem pSem);
 }S_SemApi;
 extern S_SemApi SemApi;
 #pragma endregion
 #pragma region Mail
 typedef enum {
-    /* ” œ‰ø’ */
-    eEmpty = 0,
-    /* ” œ‰¬˙ */
-    eFully = 1,
+	/* ” œ‰ø’ */
+	eEmpty = 0,
+	/* ” œ‰¬˙ */
+	eFully = 1,
 }E_MailState;
 typedef struct {
-    /* ” œ‰◊¥Ã¨:ø’|¬˙ */
-    E_MailState State;
-    /* ” œ‰ƒ⁄»› */
-    BUL32 MailContent;
+	/* ” œ‰◊¥Ã¨:ø’|¬˙ */
+	E_MailState State;
+	/* ” œ‰ƒ⁄»› */
+	BUL32 MailContent;
 }S_Mail, *S_PMail;
 typedef struct {
-    EBOOL(*Take)(S_PMail pMail, PPVOD MailContent);
-    EBOOL(*Give)(S_PMail pMail, PVOID MailContent);
+	EBOOL(*Take)(S_PMail pMail, PPVOD MailContent);
+	EBOOL(*Give)(S_PMail pMail, PVOID MailContent);
 }S_MailApi;
 extern S_MailApi MailApi;
 typedef struct {
@@ -155,9 +156,9 @@ extern S_CbkApi CbkApi;
 typedef struct {
 	FT32 x;
 	FT32 y;
-}S_TableItem,*PS_TableItem;
+}S_TableItem, *PS_TableItem;
 typedef struct {
-	BFT32 (*Search)(PS_TableItem pS_TableItem, BUS16 MaxCount, BFT32 x);
+	BFT32(*Search)(PS_TableItem pS_TableItem, BUS16 MaxCount, BFT32 x);
 }S_TableApi;
 extern S_TableApi TableApi;
 #pragma endregion
